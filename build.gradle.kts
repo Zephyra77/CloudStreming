@@ -1,28 +1,43 @@
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
+plugins {
+    id("com.android.application")
+    kotlin("android")
+}
+
+android {
+    namespace = "com.lagradost.cloudstream3"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.lagradost.cloudstream3"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = 1
+        versionName = "0.1.0"
     }
 
-    dependencies {
-        classpath(libs.gradle)
-        classpath(libs.jetbrains.kotlin.gradle.plugin)
-        classpath(libs.dokka.gradle.plugin)
-        // Universal build config
-        classpath(libs.buildkonfig.gradle.plugin)
+    signingConfigs {
+        create("release") {
+            storeFile = file("cloudstream.jks")
+            storePassword = "YOUR_STORE_PASSWORD"
+            keyAlias = "cloudstream_key"
+            keyPassword = "YOUR_KEY_PASSWORD"
+        }
+        getByName("debug")
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
+        }
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
     }
 }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        mavenLocal()
-        maven("https://jitpack.io")
-    }
-
-    // https://docs.gradle.org/current/userguide/upgrading_major_version_9.html#test_task_fails_when_no_tests_are_discovered
-    tasks.withType<AbstractTestTask>().configureEach {
-        failOnNoDiscoveredTests = false
-    }
+dependencies {
+    implementation(project(":library"))
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
 }
