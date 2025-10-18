@@ -25,19 +25,21 @@ jobs:
       - name: Build all APKs
         run: ./gradlew assembleRelease assemblePrerelease
 
+      - name: List APK folder
+        run: ls -R app/build/outputs/apk/
+
       - name: Find APKs
-        id: find_apks
         run: |
-          STABLE_APK=$(find app/build/outputs/apk/ -type f -name "*stable*.apk")
-          PRE_APK=$(find app/build/outputs/apk/ -type f -name "*prerelease*.apk")
-          echo "STABLE_APK=$STABLE_APK" >> $GITHUB_OUTPUT
-          echo "PRE_APK=$PRE_APK" >> $GITHUB_OUTPUT
+          STABLE_APK=$(find app/build/outputs/apk/ -type f -name "*stable*.apk" | head -n 1)
+          PRE_APK=$(find app/build/outputs/apk/ -type f -name "*prerelease*.apk" | head -n 1)
+          echo "STABLE_APK=$STABLE_APK" >> $GITHUB_ENV
+          echo "PRE_APK=$PRE_APK" >> $GITHUB_ENV
 
       - name: Upload Stable APK to Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: "v${{ github.run_number }}"
-          files: ${{ steps.find_apks.outputs.STABLE_APK }}
+          files: ${{ env.STABLE_APK }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -45,6 +47,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: "pre-release-${{ github.run_number }}"
-          files: ${{ steps.find_apks.outputs.PRE_APK }}
+          files: ${{ env.PRE_APK }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
