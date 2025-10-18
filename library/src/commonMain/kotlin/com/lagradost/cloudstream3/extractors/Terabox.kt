@@ -3,10 +3,10 @@ package com.lagradost.cloudstream3.extractors
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.app
 import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 
 open class Terabox : ExtractorApi() {
     private val apiUrl: String = "https://terabox-pro-api.vercel.app/api?link="
-    private val newApi: String = "https://api.0xcloud.workers.dev"
     override val name: String = "Terabox"
     override val mainUrl: String = "https://www.terabox.com"
     override val requiresReferer: Boolean = true
@@ -19,7 +19,7 @@ open class Terabox : ExtractorApi() {
             val jsonResponse = app.get("$apiUrl$finalUrl").text
             val responseData: List<TeraboxResponse>? = tryParseJson(jsonResponse)
 
-            responseData?.forEach { item: TeraboxResponse ->
+            responseData?.forEach { item ->
                 links.add(
                     newExtractorLink(name, name, item.file) {
                         this.referer = referer ?: mainUrl
