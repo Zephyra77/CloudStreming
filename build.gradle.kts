@@ -1,6 +1,6 @@
 plugins {
-    id("com.android.application") version "8.1.1"
-    kotlin("android") version "1.9.0"
+    id("com.android.application")
+    kotlin("android")
 }
 
 android {
@@ -17,11 +17,19 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("keystore.jks") // letakkan keystore sendiri
-            storePassword = "YOUR_STORE_PASSWORD"
-            keyAlias = "YOUR_KEY_ALIAS"
-            keyPassword = "YOUR_KEY_PASSWORD"
+            val keystoreFile = System.getenv("KEYSTORE_FILE")
+            val keystorePass = System.getenv("KEYSTORE_PASSWORD")
+            val keyAlias = System.getenv("KEY_ALIAS")
+            val keyPass = System.getenv("KEY_PASSWORD")
+
+            if (!keystoreFile.isNullOrEmpty()) {
+                storeFile = file(keystoreFile)
+                storePassword = keystorePass
+                keyAlias = keyAlias
+                keyPassword = keyPass
+            }
         }
+
         getByName("debug")
     }
 
