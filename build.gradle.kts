@@ -1,3 +1,5 @@
+// build.gradle.kts
+
 buildscript {
     repositories {
         google()
@@ -9,6 +11,7 @@ buildscript {
     }
 }
 
+// apply plugin
 apply(plugin = "com.android.application")
 apply(plugin = "kotlin-android")
 
