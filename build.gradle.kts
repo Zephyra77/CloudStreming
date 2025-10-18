@@ -1,6 +1,6 @@
 plugins {
     id("com.android.application")
-    kotlin("android")
+    kotlin("android") version "1.9.0"
 }
 
 android {
@@ -17,12 +17,12 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file(System.getenv("KEYSTORE_FILE"))
+            // Ambil dari environment variables
+            storeFile = System.getenv("KEYSTORE_FILE")?.let { file(it) }
             storePassword = System.getenv("KEYSTORE_PASSWORD")
             keyAlias = System.getenv("KEY_ALIAS")
             keyPassword = System.getenv("KEY_PASSWORD")
         }
-        getByName("debug")
     }
 
     buildTypes {
@@ -31,7 +31,7 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
         debug {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release") // bisa pakai release juga atau debug default
         }
     }
 }
@@ -39,6 +39,8 @@ android {
 repositories {
     google()
     mavenCentral()
+    mavenLocal()
+    maven("https://jitpack.io")
 }
 
 dependencies {
