@@ -13,7 +13,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up JDK
+      - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: temurin
@@ -25,28 +25,30 @@ jobs:
       - name: Build all APKs
         run: ./gradlew assembleRelease assemblePrerelease
 
-      - name: List APK folder
+      - name: List APK outputs
         run: ls -R app/build/outputs/apk/
 
-      - name: Find APKs
+      - name: Find APK files
         run: |
-          STABLE_APK=$(find app/build/outputs/apk/ -type f -name "*stable*.apk" | head -n 1)
+          STABLE_APK=$(find app/build/outputs/apk/ -type f -name "*release*.apk" | head -n 1)
           PRE_APK=$(find app/build/outputs/apk/ -type f -name "*prerelease*.apk" | head -n 1)
           echo "STABLE_APK=$STABLE_APK" >> $GITHUB_ENV
           echo "PRE_APK=$PRE_APK" >> $GITHUB_ENV
 
-      - name: Upload Stable APK to Release
+      - name: Upload Stable APK to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: "v${{ github.run_number }}"
+          name: "CloudStream Stable"
           files: ${{ env.STABLE_APK }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Pre-release APK to Pre-release
+      - name: Upload Pre-release APK to GitHub Pre-release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: "pre-release-${{ github.run_number }}"
+          name: "CloudStream Pre-release"
           files: ${{ env.PRE_APK }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
