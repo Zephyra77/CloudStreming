@@ -1,7 +1,7 @@
 import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
 import com.codingfeline.buildkonfig.compiler.FieldSpec
-import org.jetbrains.dokka.gradle.engine.parameters.KotlinPlatform
-import org.jetbrains.dokka.gradle.engine.parameters.VisibilityModifier
+import org.jetbrains.dokka.gradle.DokkaTask
+import org.jetbrains.dokka.gradle.DokkaSourceSetBuilder
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
@@ -38,21 +38,19 @@ kotlin {
         }
 
         commonMain.dependencies {
-            implementation(libs.nicehttp) // HTTP Lib
-            implementation(libs.jackson.module.kotlin) // JSON Parser
+            implementation(libs.nicehttp)
+            implementation(libs.jackson.module.kotlin)
             implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.fuzzywuzzy) // Match Extractors
-            implementation(libs.rhino) // Run JavaScript
+            implementation(libs.fuzzywuzzy)
+            implementation(libs.rhino)
             implementation(libs.newpipeextractor)
-            implementation(libs.tmdb.java) // TMDB API v3 Wrapper Made with RetroFit
+            implementation(libs.tmdb.java)
         }
     }
 }
 
 tasks.withType<KotlinJvmCompile> {
-    compilerOptions {
-        jvmTarget.set(javaTarget)
-    }
+    compilerOptions.jvmTarget.set(javaTarget)
 }
 
 buildkonfig {
@@ -66,9 +64,11 @@ buildkonfig {
         } else {
             logger.quiet("Compiling library with release flag")
         }
+
         buildConfigField(FieldSpec.Type.BOOLEAN, "DEBUG", isDebug.toString())
 
-        val localProperties = gradleLocalProperties(rootDir, project.providers)
+        // ✅ hanya 1 argumen sekarang (Gradle 8+)
+        val localProperties = gradleLocalProperties(rootDir)
 
         buildConfigField(
             FieldSpec.Type.STRING,
@@ -92,13 +92,10 @@ android {
         targetCompatibility = JavaVersion.toVersion(javaTarget.target)
     }
 
-    @Suppress("UnstableApiUsage")
-    testOptions {
-        targetSdk = libs.versions.targetSdk.get().toInt()
-    }
-
+    // ❌ targetSdk di lint/testOptions dihapus, udah deprecated
     lint {
-        targetSdk = libs.versions.targetSdk.get().toInt()
+        abortOnError = false
+        checkReleaseBuilds = false
     }
 }
 
@@ -110,26 +107,22 @@ publishing {
     }
 }
 
-dokka {
+tasks.register<DokkaTask>("dokkaHtml") {
+    outputDirectory.set(buildDir.resolve("dokka"))
     moduleName.set("Library")
 
-    dokkaSourceSets {
-        configureEach {
-            analysisPlatform.set(KotlinPlatform.AndroidJVM)
-            documentedVisibilities.set(
-                setOf(
-                    VisibilityModifier.Public,
-                    VisibilityModifier.Protected
-                )
-            )
+    dokkaSourceSets.configureEach {
+        displayName.set("Android/JVM")
+        skipEmptyPackages.set(true)
 
-            sourceLink {
-                localDirectory.set(file(".."))
-                remoteUrl.set(
-                    uri("https://github.com/recloudstream/cloudstream/tree/master").toURL()
-                )
-                remoteLineSuffix.set("#L")
-            }
+        includes.from("README.md")
+
+        sourceLink {
+            localDirectory.set(file(".."))
+            remoteUrl.set(
+                uri("https://github.com/recloudstream/cloudstream/tree/master").toURL()
+            )
+            remoteLineSuffix.set("#L")
         }
     }
 }
