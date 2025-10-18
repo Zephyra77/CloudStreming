@@ -6,11 +6,10 @@ import com.lagradost.cloudstream3.utils.*
 
 open class Terabox : ExtractorApi() {
     private val apiUrl: String = "https://terabox-pro-api.vercel.app/api?link="
-    private val baseUrl: String = "https://www.1024terabox.com"
     private val newApi: String = "https://api.0xcloud.workers.dev"
     override val name: String = "Terabox"
-    open val mainUrl: String = "https://www.terabox.com"
-    open val requiresReferer: Boolean = true
+    override val mainUrl: String = "https://www.terabox.com"
+    override val requiresReferer: Boolean = true
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val links = mutableListOf<ExtractorLink>()
@@ -18,9 +17,9 @@ open class Terabox : ExtractorApi() {
 
         try {
             val jsonResponse = app.get("$apiUrl$finalUrl").text
-            val responseData = tryParseJson<List<TeraboxResponse>>(jsonResponse)
+            val responseData: List<TeraboxResponse>? = tryParseJson(jsonResponse)
 
-            responseData?.forEach { item ->
+            responseData?.forEach { item: TeraboxResponse ->
                 links.add(
                     newExtractorLink(name, name, item.file) {
                         this.referer = referer ?: mainUrl
