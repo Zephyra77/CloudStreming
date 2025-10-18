@@ -17,10 +17,10 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("keystore.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD")
-            keyAlias = System.getenv("KEY_ALIAS")
-            keyPassword = System.getenv("KEY_PASSWORD")
+            storeFile = file(System.getenv("KEYSTORE_FILE") ?: "keystore.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+            keyAlias = System.getenv("KEY_ALIAS") ?: ""
+            keyPassword = System.getenv("KEY_PASSWORD") ?: ""
         }
         getByName("debug")
     }
@@ -32,10 +32,6 @@ android {
         }
         debug {
             signingConfig = signingConfigs.getByName("debug")
-        }
-        create("prerelease") {
-            isMinifyEnabled = false
-            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
