@@ -22,30 +22,23 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
+      # ✅ Decode keystore dulu sebelum build
+      - name: Decode keystore
+        run: echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > keystore.jks
+
       - name: Build all APKs
-        run: ./gradlew clean assembleRelease assemblePrerelease
+        run: ./gradlew clean assembleRelease assemblePrerelease \
+          -Pandroid.injected.signing.store.file=keystore.jks \
+          -Pandroid.injected.signing.store.password=$KEYSTORE_PASSWORD \
+          -Pandroid.injected.signing.key.alias=$KEY_ALIAS \
+          -Pandroid.injected.signing.key.password=$KEY_PASSWORD
         env:
-          KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: List APK outputs
         run: ls -R app/build/outputs/apk/
-
-      # ✨ Tambahan baru di sini — sign APK pakai keystore yang kamu buat
-      - name: Sign APKs
-        run: |
-          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > keystore.jks
-          sudo apt-get update && sudo apt-get install -y apksigner
-          for file in $(find app/build/outputs/apk/ -type f -name "*.apk"); do
-            echo "🔏 Signing $file ..."
-            apksigner sign --ks keystore.jks \
-              --ks-key-alias "${{ secrets.KEY_ALIAS }}" \
-              --ks-pass pass:"${{ secrets.KEYSTORE_PASSWORD }}" \
-              --key-pass pass:"${{ secrets.KEY_PASSWORD }}" \
-              "$file"
-          done
 
       - name: Find APK files
         run: |
