@@ -14,15 +14,22 @@ val prereleaseStoreFile: File? = File(tmpFilePath).listFiles()?.first()
 fun getGitCommitHash(): String {
     return try {
         val headFile = file("${project.rootDir}/.git/HEAD")
+
         if (headFile.exists()) {
             val headContent = headFile.readText().trim()
             if (headContent.startsWith("ref:")) {
                 val refPath = headContent.substring(5)
                 val commitFile = file("${project.rootDir}/.git/$refPath")
                 if (commitFile.exists()) commitFile.readText().trim() else ""
-            } else headContent
-        } else ""
-    }.take(7)
+            } else {
+                headContent
+            }
+        } else {
+            ""
+        }
+    } catch (_: Throwable) {
+        ""
+    }.take(7) 
 }
 
 android {
@@ -59,7 +66,6 @@ android {
         resValue("string", "commit_hash", getGitCommitHash())
         resValue("bool", "is_prerelease", "false")
 
-        // ✅ Perbaikan di sini
         val localProperties = gradleLocalProperties(rootDir)
 
         buildConfigField(
