@@ -19,35 +19,28 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      # 🧱 Force Gradle version 8.5 (biar gak crash)
-      - name: Set Gradle version to 8.5
-        run: |
-          mkdir -p gradle/wrapper
-          echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
-          echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
-          echo "distributionUrl=https\\://services.gradle.org/distributions/gradle-8.5-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
-          echo "zipStoreBase=GRADLE_USER_HOME" >> gradle/wrapper/gradle-wrapper.properties
-          echo "zipStorePath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
-
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Build APKs (Release + PreRelease)
+      # 🔑 Decode keystore dari Secrets base64 jadi file keystore.jks
+      - name: Decode keystore
         run: |
-          ./gradlew clean assembleRelease assemblePrerelease \
-            -Pandroid.injected.signing.store.file=keystore.jks \
-            -Pandroid.injected.signing.store.password=${{ secrets.KEYSTORE_PASSWORD }} \
-            -Pandroid.injected.signing.key.alias=${{ secrets.KEY_ALIAS }} \
-            -Pandroid.injected.signing.key.password=${{ secrets.KEY_PASSWORD }}
+          echo "${{ secrets.KEYSTORE_FILE }}" | base64 --decode > keystore.jks
+          ls -la keystore.jks
+
+      # 🧱 Build APKs
+      - name: Build all APKs
+        run: ./gradlew clean assembleRelease assemblePrerelease
         env:
-          KEYSTORE_FILE: ${{ secrets.KEYSTORE_FILE }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
+      # 📂 List hasil build
       - name: List APK outputs
         run: ls -R app/build/outputs/apk/
 
+      # 🔍 Simpan path ke environment
       - name: Find APK files
         run: |
           STABLE_APK=$(find app/build/outputs/apk/ -type f -name "*release*.apk" | head -n 1)
@@ -55,6 +48,7 @@ jobs:
           echo "STABLE_APK=$STABLE_APK" >> $GITHUB_ENV
           echo "PRE_APK=$PRE_APK" >> $GITHUB_ENV
 
+      # 🚀 Upload ke GitHub Releases
       - name: Upload Stable APK to GitHub Release
         uses: softprops/action-gh-release@v1
         with:
