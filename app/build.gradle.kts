@@ -1,19 +1,15 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
-
 plugins {
-    kotlin("android")
+    kotlin("android") version "1.9.24"
     id("com.android.application")
     id("org.jetbrains.dokka") version "1.9.20"
 }
 
-val javaTarget = "17"
-
 android {
-    namespace = "com.lagradost.cloudstream3"
+    namespace = "com.cloudstream.app"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.lagradost.cloudstream3"
+        applicationId = "com.cloudstream.app"
         minSdk = 21
         targetSdk = 34
         versionCode = 1
@@ -22,21 +18,11 @@ android {
 
     buildTypes {
         release {
-            isDebuggable = false
             isMinifyEnabled = false
-            isShrinkResources = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
         }
-        debug {
-            isDebuggable = true
-            applicationIdSuffix = ".debug"
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+        prerelease {
+            initWith(buildTypes.getByName("release"))
+            isMinifyEnabled = false
         }
     }
 
@@ -46,14 +32,12 @@ android {
     }
 
     kotlinOptions {
-        jvmTarget = javaTarget
-    }
-
-    viewBinding { enable = true }
-
-    lint {
-        abortOnError = false
-        checkReleaseBuilds = false
+        jvmTarget = "17"
+        freeCompilerArgs = freeCompilerArgs + listOf(
+            "-Xjvm-default=all-compatibility",
+            "-Xannotation-default-target=param-property",
+            "-opt-in=com.lagradost.cloudstream3.Prerelease"
+        )
     }
 }
 
@@ -63,18 +47,20 @@ repositories {
 }
 
 dependencies {
+    // Project modules
     implementation(project(":library"))
 
-    // Kotlin + Core
+    // Kotlin stdlib
     implementation(kotlin("stdlib"))
+
+    // AndroidX
     implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.appcompat:appcompat:1.7.0")
 
     // Media 3 (ExoPlayer)
     implementation(libs.bundles.media3)
     implementation(libs.video)
 
-    // Playback & Utilities
+    // Playback
     implementation(libs.colorpicker)
     implementation(libs.newpipeextractor)
     implementation(libs.juniversalchardet)
@@ -82,11 +68,11 @@ dependencies {
     // FFmpeg Decoding
     implementation(libs.bundles.nextlibMedia3)
 
-    // Crash Reporting
+    // Crash Reports
     implementation(libs.acra.core)
     implementation(libs.acra.toast)
 
-    // UI Stuff
+    // UI
     implementation(libs.shimmer)
     implementation(libs.palette.ktx)
     implementation(libs.tvprovider)
@@ -95,7 +81,7 @@ dependencies {
     implementation(libs.previewseekbar.media3)
     implementation(libs.qrcode.kotlin)
 
-    // Extensions & Other Libs
+    // Extensions & other libs
     implementation(libs.rhino)
     implementation(libs.quickjs)
     implementation(libs.fuzzywuzzy)
@@ -104,28 +90,23 @@ dependencies {
     implementation(libs.conscrypt.android) { version { strictly("2.5.2") } }
     implementation(libs.jackson.module.kotlin) { version { strictly("2.13.1") } }
 
-    // Torrent Support
+    // Torrent support
     implementation(libs.torrentserver)
 
-    // Downloading & Networking
+    // Downloading & networking
     implementation(libs.work.runtime)
     implementation(libs.work.runtime.ktx)
     implementation(libs.nicehttp)
 }
 
-tasks.withType<KotlinJvmCompile> {
-    compilerOptions {
-        jvmTarget.set(javaTarget)
-        freeCompilerArgs.addAll(
-            "-Xjvm-default=all-compatibility",
-            "-Xannotation-default-target=param-property",
-            "-opt-in=com.lagradost.cloudstream3.Prerelease"
-        )
-    }
-}
-
-// Dokka configuration: gunakan task yang sudah ada
-tasks.named<org.jetbrains.dokka.gradle.DokkaTask>("dokkaHtml") {
+// Dokka HTML
+tasks.dokkaHtml.configure {
     outputDirectory.set(buildDir.resolve("dokka"))
     moduleName.set("Cloudstream App")
+}
+
+// Optional: Jar tasks jika perlu
+tasks.register<Jar>("androidSourcesJar") {
+    archiveClassifier.set("sources")
+    from(android.sourceSets.getByName("main").java.srcDirs)
 }
