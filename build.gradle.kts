@@ -1,19 +1,7 @@
-// build.gradle.kts
-
-buildscript {
-    repositories {
-        google()
-        mavenCentral()
-    }
-    dependencies {
-        classpath("com.android.tools.build:gradle:8.1.1")
-        classpath(kotlin("gradle-plugin", version = "1.9.0"))
-    }
+plugins {
+    id("com.android.application")
+    kotlin("android")
 }
-
-// apply plugin
-apply(plugin = "com.android.application")
-apply(plugin = "kotlin-android")
 
 android {
     namespace = "com.lagradost.cloudstream3"
@@ -44,6 +32,10 @@ android {
         }
         debug {
             signingConfig = signingConfigs.getByName("debug")
+        }
+        create("prerelease") {
+            isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
