@@ -9,14 +9,19 @@ plugins {
     kotlin("multiplatform")
     id("maven-publish")
     id("com.android.library")
-    id("com.codingfeline.buildkonfig")
-    id("org.jetbrains.dokka")
+    id("com.codingfeline.buildkonfig") version "0.15.1"
+    id("org.jetbrains.dokka") version "1.9.20"
 }
 
-val javaTarget = JvmTarget.fromTarget(libs.versions.jvmTarget.get())
+repositories {
+    google()
+    mavenCentral()
+    gradlePluginPortal()
+}
+
+val javaTarget = JvmTarget.fromTarget("17")
 
 kotlin {
-    version = "1.0.1"
     androidTarget()
     jvm()
 
@@ -63,7 +68,6 @@ buildkonfig {
         }
         buildConfigField(FieldSpec.Type.BOOLEAN, "DEBUG", isDebug.toString())
 
-        // Reads local.properties
         val localProperties = gradleLocalProperties(rootDir, project.providers)
 
         buildConfigField(
@@ -81,7 +85,6 @@ android {
         minSdk = libs.versions.minSdk.get().toInt()
     }
 
-    // If this is the same com.lagradost.cloudstream3.R stops working
     namespace = "com.lagradost.api"
 
     compileOptions {
@@ -108,19 +111,24 @@ publishing {
 }
 
 dokka {
-    moduleName = "Library"
+    moduleName.set("Library")
+
     dokkaSourceSets {
         configureEach {
-            analysisPlatform = KotlinPlatform.AndroidJVM
-            documentedVisibilities(
-                VisibilityModifier.Public,
-                VisibilityModifier.Protected
+            analysisPlatform.set(KotlinPlatform.AndroidJVM)
+            documentedVisibilities.set(
+                setOf(
+                    VisibilityModifier.Public,
+                    VisibilityModifier.Protected
+                )
             )
 
             sourceLink {
-                localDirectory = file("..")
-                remoteUrl("https://github.com/recloudstream/cloudstream/tree/master")
-                remoteLineSuffix = "#L"
+                localDirectory.set(file(".."))
+                remoteUrl.set(
+                    uri("https://github.com/recloudstream/cloudstream/tree/master").toURL()
+                )
+                remoteLineSuffix.set("#L")
             }
         }
     }
