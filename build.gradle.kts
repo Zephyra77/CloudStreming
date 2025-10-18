@@ -17,10 +17,10 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file(System.getenv("KEYSTORE_FILE") ?: "keystore.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
-            keyAlias = System.getenv("KEY_ALIAS") ?: ""
-            keyPassword = System.getenv("KEY_PASSWORD") ?: ""
+            storeFile = file(System.getenv("KEYSTORE_FILE"))
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
         }
         getByName("debug")
     }
@@ -39,8 +39,6 @@ android {
 repositories {
     google()
     mavenCentral()
-    mavenLocal()
-    maven("https://jitpack.io")
 }
 
 dependencies {
