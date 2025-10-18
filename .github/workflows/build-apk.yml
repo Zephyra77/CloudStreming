@@ -28,14 +28,14 @@ jobs:
       - name: Build Pre-release APK
         run: ./gradlew assemblePrerelease
 
-      - name: List APK folder
+      - name: List APK folder for debug
         run: ls -R app/build/outputs/apk/
 
       - name: Upload Stable APK to Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: "v1.0.${{ github.run_number }}"
-          files: app/build/outputs/apk/stable/app-stable-release-unsigned.apk
+          tag_name: "v${{ github.run_number }}"
+          files: app/build/outputs/apk/release/app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -43,6 +43,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: "pre-release-${{ github.run_number }}"
-          files: app/build/outputs/apk/prerelease/app-prerelease-release-unsigned.apk
+          files: app/build/outputs/apk/prerelease/app-prerelease.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
