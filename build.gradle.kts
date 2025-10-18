@@ -1,5 +1,5 @@
 plugins {
-    id("com.android.application")
+    id("com.android.application") version "8.1.1"
     kotlin("android") version "1.9.0"
 }
 
@@ -17,7 +17,6 @@ android {
 
     signingConfigs {
         create("release") {
-            // Ambil dari environment variables
             storeFile = System.getenv("KEYSTORE_FILE")?.let { file(it) }
             storePassword = System.getenv("KEYSTORE_PASSWORD")
             keyAlias = System.getenv("KEY_ALIAS")
@@ -31,7 +30,7 @@ android {
             signingConfig = signingConfigs.getByName("release")
         }
         debug {
-            signingConfig = signingConfigs.getByName("release") // bisa pakai release juga atau debug default
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 }
