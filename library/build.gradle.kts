@@ -1,73 +1,94 @@
+import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+import com.codingfeline.buildkonfig.compiler.FieldSpec
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
+
 plugins {
-    kotlin("android") version "1.9.24"
+    kotlin("multiplatform")
     id("com.android.library")
+    id("maven-publish")
+    id("com.codingfeline.buildkonfig")
     id("org.jetbrains.dokka") version "1.9.20"
-    id("com.codingfeline.buildkonfig") version "0.15.1"
 }
 
-android {
-    namespace = "com.lagradost.cloudstream3"
-    compileSdk = 34
+val javaTarget = JavaVersion.VERSION_17
 
-    defaultConfig {
-        minSdk = 21
-        targetSdk = 34
-        consumerProguardFiles("consumer-rules.pro")
-    }
+kotlin {
+    androidTarget()
+    jvm()
 
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+    sourceSets {
+        all {
+            languageSettings.optIn("com.lagradost.cloudstream3.Prerelease")
         }
-        debug {
-            isMinifyEnabled = false
+
+        commonMain.dependencies {
+            implementation(libs.nicehttp)
+            implementation(libs.jackson.module.kotlin)
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.fuzzywuzzy)
+            implementation(libs.rhino)
+            implementation(libs.newpipeextractor)
+            implementation(libs.tmdb.java)
         }
     }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
-    }
 }
 
-repositories {
-    mavenCentral()
-    google()
-    gradlePluginPortal()
-}
-
-dependencies {
-    implementation(kotlin("stdlib"))
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.google.code.gson:gson:2.10.1")
+tasks.withType<KotlinJvmCompile> {
+    kotlinOptions.jvmTarget = "17"
 }
 
 buildkonfig {
-    packageName = "com.lagradost.cloudstream3"
-    objectName = "BuildConfig"
+    packageName = "com.lagradost.api"
+    exposeObjectWithName = "BuildConfig"
+
     defaultConfigs {
-        buildConfigField(STRING, "APP_NAME", "Cloudstream")
-        buildConfigField(STRING, "APP_VERSION", "1.0.0")
+        val isDebug = kotlin.runCatching { extra.get("isDebug") }.getOrNull() == true
+        buildConfigField(FieldSpec.Type.BOOLEAN, "DEBUG", isDebug.toString())
+
+        val localProperties = gradleLocalProperties(rootDir)
+
+        buildConfigField(
+            FieldSpec.Type.STRING,
+            "MDL_API_KEY",
+            System.getenv("MDL_API_KEY") ?: localProperties["mdl.key"].toString()
+        )
     }
 }
 
-tasks.register("generateDocs") {
-    dependsOn(tasks.dokkaHtml)
+android {
+    compileSdk = libs.versions.compileSdk.get().toInt()
+    namespace = "com.lagradost.api"
+    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
+
+    defaultConfig {
+        minSdk = libs.versions.minSdk.get().toInt()
+        targetSdk = libs.versions.targetSdk.get().toInt()
+    }
+
+    compileOptions {
+        sourceCompatibility = javaTarget
+        targetCompatibility = javaTarget
+    }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }
 
-// ✅ Dokka konfigurasi yang benar
-tasks.dokkaHtml.configure {
+publishing {
+    publications {
+        withType<MavenPublication> {
+            groupId = "com.lagradost.api"
+        }
+    }
+}
+
+tasks.register<org.jetbrains.dokka.gradle.DokkaTask>("dokkaHtml") {
     outputDirectory.set(buildDir.resolve("dokka"))
-    moduleName.set("Cloudstream Library")
+    dokkaSourceSets {
+        named("commonMain") {
+            displayName.set("Common")
+            includes.from("Module.md")
+        }
+    }
 }
