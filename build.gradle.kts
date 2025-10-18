@@ -1,7 +1,16 @@
-plugins {
-    id("com.android.application") version "8.1.1"
-    kotlin("android") version "1.9.0"
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle:8.1.1")
+        classpath(kotlin("gradle-plugin", version = "1.9.0"))
+    }
 }
+
+apply(plugin = "com.android.application")
+apply(plugin = "kotlin-android")
 
 android {
     namespace = "com.lagradost.cloudstream3"
@@ -17,11 +26,10 @@ android {
 
     signingConfigs {
         create("release") {
-            // Keystore akan di-inject lewat GitHub Actions
             storeFile = file("keystore.jks")
-            storePassword = project.findProperty("android.injected.signing.store.password")?.toString() ?: ""
-            keyAlias = project.findProperty("android.injected.signing.key.alias")?.toString() ?: ""
-            keyPassword = project.findProperty("android.injected.signing.key.password")?.toString() ?: ""
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
         }
         getByName("debug")
     }
@@ -34,19 +42,6 @@ android {
         debug {
             signingConfig = signingConfigs.getByName("debug")
         }
-        create("prerelease") {
-            initWith(getByName("release"))
-            versionNameSuffix = "-prerelease"
-        }
-    }
-
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
     }
 }
 
