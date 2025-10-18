@@ -22,16 +22,27 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
-      - name: Build APK
+      - name: Build Stable APK
         run: ./gradlew assembleRelease
 
-      - name: List APK folder for debug
+      - name: Build Pre-release APK
+        run: ./gradlew assemblePrerelease
+
+      - name: List APK folder
         run: ls -R app/build/outputs/apk/
 
-      - name: Create Release and Upload APK
+      - name: Upload Stable APK to Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: "v1.0.${{ github.run_number }}"
-          files: app/build/outputs/apk/**/**/*.apk
+          files: app/build/outputs/apk/stable/app-stable-release-unsigned.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Pre-release APK to Pre-release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "pre-release-${{ github.run_number }}"
+          files: app/build/outputs/apk/prerelease/app-prerelease-release-unsigned.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
