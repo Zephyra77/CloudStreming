@@ -1,12 +1,15 @@
-import org.jetbrains.kotlin.gradle.dsl.KotlinJvmCompile
+import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
 
 plugins {
-    kotlin("android") // versi Kotlin ikut Android Gradle Plugin
     id("com.android.application")
+    kotlin("android")
     id("org.jetbrains.dokka") version "1.9.20"
 }
 
-val javaTarget = "17"
+val javaTarget = JavaVersion.VERSION_17
+val tmpFilePath = System.getProperty("user.home") + "/work/_temp/keystore/"
+val prereleaseStoreFile: File? = File(tmpFilePath).listFiles()?.first()
 
 fun getGitCommitHash(): String {
     return try {
@@ -17,39 +20,45 @@ fun getGitCommitHash(): String {
                 val refPath = headContent.substring(5)
                 val commitFile = file("${project.rootDir}/.git/$refPath")
                 if (commitFile.exists()) commitFile.readText().trim() else ""
-            } else {
-                headContent
-            }
-        } else {
-            ""
-        }
+            } else headContent
+        } else ""
     } catch (_: Throwable) {
         ""
     }.take(7)
 }
 
 android {
+    compileSdk = libs.versions.compileSdk.get().toInt()
     namespace = "com.lagradost.cloudstream3"
-    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.lagradost.cloudstream3"
-        minSdk = 21
-        targetSdk = 34
+        minSdk = libs.versions.minSdk.get().toInt()
+        targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 67
         versionName = "4.6.0"
 
         resValue("string", "app_version", "${versionName}")
         resValue("string", "commit_hash", getGitCommitHash())
         resValue("bool", "is_prerelease", "false")
+
+        val localProperties = gradleLocalProperties(rootDir)
+        buildConfigField(
+            "String",
+            "SIMKL_CLIENT_ID",
+            "\"" + (System.getenv("SIMKL_CLIENT_ID") ?: localProperties["simkl.id"]) + "\""
+        )
+        buildConfigField(
+            "String",
+            "SIMKL_CLIENT_SECRET",
+            "\"" + (System.getenv("SIMKL_CLIENT_SECRET") ?: localProperties["simkl.secret"]) + "\""
+        )
     }
 
     signingConfigs {
-        val tmpFilePath = System.getProperty("user.home") + "/work/_temp/keystore/"
-        val prereleaseStoreFile: File? = File(tmpFilePath).listFiles()?.first()
-        if (prereleaseStoreFile != null) {
+        prereleaseStoreFile?.let {
             create("prerelease") {
-                storeFile = prereleaseStoreFile
+                storeFile = it
                 storePassword = System.getenv("SIGNING_STORE_PASSWORD")
                 keyAlias = System.getenv("SIGNING_KEY_ALIAS")
                 keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
@@ -59,21 +68,13 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
-            isShrinkResources = false
             isDebuggable = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            isMinifyEnabled = false
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         debug {
             isDebuggable = true
             applicationIdSuffix = ".debug"
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
         }
     }
 
@@ -88,41 +89,33 @@ android {
             resValue("bool", "is_prerelease", "true")
             buildConfigField("boolean", "BETA", "true")
             applicationIdSuffix = ".prerelease"
-            if (signingConfigs.names.contains("prerelease")) {
-                signingConfig = signingConfigs.getByName("prerelease")
-            } else {
-                logger.warn("No prerelease signing config!")
-            }
+            signingConfig = signingConfigs.findByName("prerelease")
             versionNameSuffix = "-PRE"
             versionCode = (System.currentTimeMillis() / 60000).toInt()
         }
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-        isCoreLibraryDesugaringEnabled = true
+        sourceCompatibility = javaTarget
+        targetCompatibility = javaTarget
     }
 
     kotlinOptions {
-        jvmTarget = javaTarget
-        freeCompilerArgs = freeCompilerArgs + listOf(
-            "-Xjvm-default=all-compatibility",
-            "-Xannotation-default-target=param-property",
-            "-opt-in=com.lagradost.cloudstream3.Prerelease"
-        )
+        jvmTarget = "17"
     }
 
     buildFeatures {
+        viewBinding = true
         buildConfig = true
-        viewBinding {
-            enable = true
-        }
     }
 
     lint {
         abortOnError = false
         checkReleaseBuilds = false
+    }
+
+    testOptions {
+        unitTests.isReturnDefaultValues = true
     }
 }
 
@@ -133,26 +126,70 @@ repositories {
 
 dependencies {
     implementation(project(":library"))
-    implementation(kotlin("stdlib"))
 
-    // Android Core & Lifecycle
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.appcompat:appcompat:1.7.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+    // Core
+    implementation(libs.core.ktx)
+    implementation(libs.appcompat)
+    implementation(libs.material)
+    implementation(libs.constraintlayout)
 
-    // Media 3 & Video
-    implementation("androidx.media3:media3-exoplayer:1.1.0")
-    implementation("androidx.media3:media3-ui:1.1.0")
+    // Media 3 / Video
+    implementation(libs.bundles.media3)
+    implementation(libs.video)
+    implementation(libs.bundles.nextlibMedia3)
 
-    // Networking & JSON
-    implementation("com.squareup.okhttp3:okhttp:4.11.0")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.13.1")
+    // Playback & Utilities
+    implementation(libs.colorpicker)
+    implementation(libs.newpipeextractor)
+    implementation(libs.juniversalchardet)
 
-    // Desugar
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
+    // Crash Reporting
+    implementation(libs.acra.core)
+    implementation(libs.acra.toast)
+
+    // UI
+    implementation(libs.shimmer)
+    implementation(libs.palette.ktx)
+    implementation(libs.tvprovider)
+    implementation(libs.overlappingpanels)
+    implementation(libs.biometric)
+    implementation(libs.previewseekbar.media3)
+    implementation(libs.qrcode.kotlin)
+
+    // Extensions / JS / Parsing
+    implementation(libs.rhino)
+    implementation(libs.quickjs)
+    implementation(libs.fuzzywuzzy)
+    implementation(libs.safefile)
+
+    // Networking & Download
+    implementation(libs.work.runtime)
+    implementation(libs.work.runtime.ktx)
+    implementation(libs.nicehttp)
+
+    // Security / Compatibility
+    coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
+    implementation(libs.conscrypt.android) {
+        version { strictly("2.5.2") }
+    }
+    implementation(libs.jackson.module.kotlin) {
+        version { strictly("2.13.1") }
+    }
+
+    // Torrent Support
+    implementation(libs.torrentserver)
 }
 
-tasks.dokkaHtml.configure {
+tasks.withType<KotlinJvmCompile> {
+    kotlinOptions.jvmTarget = "17"
+    kotlinOptions.freeCompilerArgs += listOf(
+        "-Xjvm-default=all-compatibility",
+        "-Xannotation-default-target=param-property",
+        "-opt-in=com.lagradost.cloudstream3.Prerelease"
+    )
+}
+
+tasks.register<org.jetbrains.dokka.gradle.DokkaTask>("dokkaHtml") {
     outputDirectory.set(buildDir.resolve("dokka"))
     moduleName.set("Cloudstream App")
 }
