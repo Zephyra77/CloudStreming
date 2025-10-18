@@ -1,6 +1,6 @@
 plugins {
-    id("com.android.application")
-    kotlin("android")
+    id("com.android.application") version "8.1.1"
+    kotlin("android") version "1.9.0"
 }
 
 android {
@@ -17,9 +17,9 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("cloudstream.jks")
+            storeFile = file("keystore.jks") // letakkan keystore sendiri
             storePassword = "YOUR_STORE_PASSWORD"
-            keyAlias = "cloudstream_key"
+            keyAlias = "YOUR_KEY_ALIAS"
             keyPassword = "YOUR_KEY_PASSWORD"
         }
         getByName("debug")
@@ -34,6 +34,13 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+}
+
+repositories {
+    google()
+    mavenCentral()
+    mavenLocal()
+    maven("https://jitpack.io")
 }
 
 dependencies {
