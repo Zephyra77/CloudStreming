@@ -1,128 +1,73 @@
-import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
-import com.codingfeline.buildkonfig.compiler.FieldSpec
-import org.jetbrains.dokka.gradle.DokkaTask
-import org.jetbrains.dokka.gradle.DokkaSourceSetBuilder
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
-
 plugins {
-    kotlin("multiplatform")
-    id("maven-publish")
+    kotlin("android") version "1.9.24"
     id("com.android.library")
-    id("com.codingfeline.buildkonfig") version "0.15.1"
     id("org.jetbrains.dokka") version "1.9.20"
-}
-
-repositories {
-    google()
-    mavenCentral()
-    gradlePluginPortal()
-}
-
-val javaTarget = JvmTarget.fromTarget("17")
-
-kotlin {
-    androidTarget()
-    jvm()
-
-    compilerOptions {
-        freeCompilerArgs.addAll(
-            "-Xexpect-actual-classes",
-            "-Xannotation-default-target=param-property"
-        )
-    }
-
-    sourceSets {
-        all {
-            languageSettings.optIn("com.lagradost.cloudstream3.Prerelease")
-        }
-
-        commonMain.dependencies {
-            implementation(libs.nicehttp)
-            implementation(libs.jackson.module.kotlin)
-            implementation(libs.kotlinx.coroutines.core)
-            implementation(libs.fuzzywuzzy)
-            implementation(libs.rhino)
-            implementation(libs.newpipeextractor)
-            implementation(libs.tmdb.java)
-        }
-    }
-}
-
-tasks.withType<KotlinJvmCompile> {
-    compilerOptions.jvmTarget.set(javaTarget)
-}
-
-buildkonfig {
-    packageName = "com.lagradost.api"
-    exposeObjectWithName = "BuildConfig"
-
-    defaultConfigs {
-        val isDebug = kotlin.runCatching { extra.get("isDebug") }.getOrNull() == true
-        if (isDebug) {
-            logger.quiet("Compiling library with debug flag")
-        } else {
-            logger.quiet("Compiling library with release flag")
-        }
-
-        buildConfigField(FieldSpec.Type.BOOLEAN, "DEBUG", isDebug.toString())
-
-        // ✅ hanya 1 argumen sekarang (Gradle 8+)
-        val localProperties = gradleLocalProperties(rootDir)
-
-        buildConfigField(
-            FieldSpec.Type.STRING,
-            "MDL_API_KEY", (System.getenv("MDL_API_KEY") ?: localProperties["mdl.key"]).toString()
-        )
-    }
+    id("com.codingfeline.buildkonfig") version "0.15.1"
 }
 
 android {
-    compileSdk = libs.versions.compileSdk.get().toInt()
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
+    namespace = "com.lagradost.cloudstream3"
+    compileSdk = 34
 
     defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
+        minSdk = 21
+        targetSdk = 34
+        consumerProguardFiles("consumer-rules.pro")
     }
 
-    namespace = "com.lagradost.api"
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        debug {
+            isMinifyEnabled = false
+        }
+    }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.toVersion(javaTarget.target)
-        targetCompatibility = JavaVersion.toVersion(javaTarget.target)
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 
-    // ❌ targetSdk di lint/testOptions dihapus, udah deprecated
-    lint {
-        abortOnError = false
-        checkReleaseBuilds = false
+    kotlinOptions {
+        jvmTarget = "17"
     }
 }
 
-publishing {
-    publications {
-        withType<MavenPublication> {
-            groupId = "com.lagradost.api"
-        }
+repositories {
+    mavenCentral()
+    google()
+    gradlePluginPortal()
+}
+
+dependencies {
+    implementation(kotlin("stdlib"))
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+    implementation("com.google.code.gson:gson:2.10.1")
+}
+
+buildkonfig {
+    packageName = "com.lagradost.cloudstream3"
+    objectName = "BuildConfig"
+    defaultConfigs {
+        buildConfigField(STRING, "APP_NAME", "Cloudstream")
+        buildConfigField(STRING, "APP_VERSION", "1.0.0")
     }
 }
 
-tasks.register<DokkaTask>("dokkaHtml") {
+tasks.register("generateDocs") {
+    dependsOn(tasks.dokkaHtml)
+}
+
+// ✅ Dokka konfigurasi yang benar
+tasks.dokkaHtml.configure {
     outputDirectory.set(buildDir.resolve("dokka"))
-    moduleName.set("Library")
-
-    dokkaSourceSets.configureEach {
-        displayName.set("Android/JVM")
-        skipEmptyPackages.set(true)
-
-        includes.from("README.md")
-
-        sourceLink {
-            localDirectory.set(file(".."))
-            remoteUrl.set(
-                uri("https://github.com/recloudstream/cloudstream/tree/master").toURL()
-            )
-            remoteLineSuffix.set("#L")
-        }
-    }
+    moduleName.set("Cloudstream Library")
 }
