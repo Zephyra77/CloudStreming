@@ -1,6 +1,6 @@
 plugins {
-    id("com.android.application")
-    kotlin("android")
+    id("com.android.application") version "8.1.1"
+    kotlin("android") version "1.9.0"
 }
 
 android {
@@ -17,19 +17,12 @@ android {
 
     signingConfigs {
         create("release") {
-            val keystoreFile = System.getenv("KEYSTORE_FILE")
-            val keystorePass = System.getenv("KEYSTORE_PASSWORD")
-            val keyAlias = System.getenv("KEY_ALIAS")
-            val keyPass = System.getenv("KEY_PASSWORD")
-
-            if (!keystoreFile.isNullOrEmpty()) {
-                storeFile = file(keystoreFile)
-                storePassword = keystorePass
-                keyAlias = keyAlias
-                keyPassword = keyPass
-            }
+            // Keystore akan di-inject lewat GitHub Actions
+            storeFile = file("keystore.jks")
+            storePassword = project.findProperty("android.injected.signing.store.password")?.toString() ?: ""
+            keyAlias = project.findProperty("android.injected.signing.key.alias")?.toString() ?: ""
+            keyPassword = project.findProperty("android.injected.signing.key.password")?.toString() ?: ""
         }
-
         getByName("debug")
     }
 
@@ -41,6 +34,19 @@ android {
         debug {
             signingConfig = signingConfigs.getByName("debug")
         }
+        create("prerelease") {
+            initWith(getByName("release"))
+            versionNameSuffix = "-prerelease"
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
     }
 }
 
