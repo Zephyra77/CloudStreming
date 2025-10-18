@@ -31,7 +31,9 @@ android {
         unitTests.isReturnDefaultValues = true
     }
 
-    viewBinding { enable = true }
+    viewBinding {
+        enable = true
+    }
 
     signingConfigs {
         if (prereleaseStoreFile != null) {
@@ -57,9 +59,14 @@ android {
         resValue("string", "commit_hash", getGitCommitHash())
         resValue("bool", "is_prerelease", "false")
 
-        val localProperties = gradleLocalProperties(rootDir, project.providers)
+        // ✅ Perbaikan di sini
+        val localProperties = gradleLocalProperties(rootDir)
 
-        buildConfigField("long", "BUILD_DATE", "${System.currentTimeMillis()}")
+        buildConfigField(
+            "long",
+            "BUILD_DATE",
+            "${System.currentTimeMillis()}"
+        )
         buildConfigField(
             "String",
             "SIMKL_CLIENT_ID",
@@ -70,7 +77,6 @@ android {
             "SIMKL_CLIENT_SECRET",
             "\"" + (System.getenv("SIMKL_CLIENT_SECRET") ?: localProperties["simkl.secret"]) + "\""
         )
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -126,12 +132,15 @@ android {
         checkReleaseBuilds = false
     }
 
-    buildFeatures { buildConfig = true }
+    buildFeatures {
+        buildConfig = true
+    }
 
     namespace = "com.lagradost.cloudstream3"
 }
 
 dependencies {
+    // Testing
     testImplementation(libs.junit)
     testImplementation(libs.json)
     androidTestImplementation(libs.core)
@@ -139,32 +148,40 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
 
+    // Android Core & Lifecycle
     implementation(libs.core.ktx)
     implementation(libs.appcompat)
     implementation(libs.bundles.navigationKtx)
     implementation(libs.lifecycle.livedata.ktx)
     implementation(libs.lifecycle.viewmodel.ktx)
 
+    // Design & UI
     implementation(libs.preference.ktx)
     implementation(libs.material)
     implementation(libs.constraintlayout)
     implementation(libs.swiperefreshlayout)
 
+    // Coil Image Loading
     implementation(libs.coil)
     implementation(libs.coil.network.okhttp)
 
+    // Media 3 (ExoPlayer)
     implementation(libs.bundles.media3)
     implementation(libs.video)
 
+    // PlayBack
     implementation(libs.colorpicker)
     implementation(libs.newpipeextractor)
     implementation(libs.juniversalchardet)
 
+    // FFmpeg Decoding
     implementation(libs.bundles.nextlibMedia3)
 
+    // Crash Reports
     implementation(libs.acra.core)
     implementation(libs.acra.toast)
 
+    // UI Stuff
     implementation(libs.shimmer)
     implementation(libs.palette.ktx)
     implementation(libs.tvprovider)
@@ -173,19 +190,27 @@ dependencies {
     implementation(libs.previewseekbar.media3)
     implementation(libs.qrcode.kotlin)
 
+    // Extensions & Other Libs
     implementation(libs.rhino)
     implementation(libs.quickjs)
     implementation(libs.fuzzywuzzy)
     implementation(libs.safefile)
     coreLibraryDesugaring(libs.desugar.jdk.libs.nio)
     implementation(libs.conscrypt.android) {
-        version { strictly("2.5.2") }
+        version {
+            strictly("2.5.2")
+        }
     }
     implementation(libs.jackson.module.kotlin) {
-        version { strictly("2.13.1") }
+        version {
+            strictly("2.13.1")
+        }
     }
 
+    // Torrent Support
     implementation(libs.torrentserver)
+
+    // Downloading & Networking
     implementation(libs.work.runtime)
     implementation(libs.work.runtime.ktx)
     implementation(libs.nicehttp)
